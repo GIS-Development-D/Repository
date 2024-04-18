@@ -1,13 +1,17 @@
 import sys
 import os
-from qgis.core import QgsApplication
+from qgis.core import (QgsApplication,
+                       QgsVectorLayer,
+                       QgsField,
+                       QgsVectorFileWriter)
+from qgis.PyQt.QtCore import QVariant
 
 # ----------------- Initialization of the QGIS related dependencies -----------------
 # Initiating a QGIS application
 home = 'D:/GIS-Development'
 QgsApplication.setPrefixPath(home, True)
-app = QgsApplication([], False)
-app.initQgis()
+qgs = QgsApplication([], False)
+qgs.initQgis()
 
 # This line import the default plugins of the QGIS
 sys.path.append(r'D:\QGIS 3.36.1\apps\qgis\python\plugins')
@@ -145,6 +149,7 @@ def SOLWEIG_Example_Goteborg():
                     'OUTPUT_DIR': output_SOLWEIG_dir})
 
 
+# ----------------- TreePlanter Function Example -----------------
 def TreePlanter_Example():
     # Input files definition
     input_directory = "Data/TreePlanterTestData"
@@ -167,44 +172,74 @@ def TreePlanter_Example():
                                               os.path.join(output_dir, 'WallAspect.tif'))
 
     processing.run("umep:Outdoor Thermal Comfort: SOLWEIG",
-                                     {'INPUT_DSM': input_dsm,
-                                      'INPUT_SVF': os.path.join(svf_outputs['OUTPUT_DIR'], 'svfs.zip'),
-                                      'INPUT_HEIGHT': wallHeightRatioOutputs['OUTPUT_HEIGHT'],
-                                      'INPUT_ASPECT': wallHeightRatioOutputs['OUTPUT_ASPECT'],
-                                      'INPUT_CDSM': input_cdsm,
-                                      'TRANS_VEG': 3, 'INPUT_TDSM': None, 'INPUT_THEIGHT': 25,
-                                      'INPUT_LC': None,
-                                      'USE_LC_BUILD': False,
-                                      'INPUT_DEM': input_dem,
-                                      'SAVE_BUILD': False,
-                                      'INPUT_ANISO': os.path.join(svf_outputs['OUTPUT_DIR'], 'shadowmats.npz'),
-                                      'ALBEDO_WALLS': 0.2, 'ALBEDO_GROUND': 0.15, 'EMIS_WALLS': 0.9,
-                                      'EMIS_GROUND': 0.95,
-                                      'ABS_S': 0.7, 'ABS_L': 0.95, 'POSTURE': 0, 'CYL': True,
-                                      'INPUTMET': input_meteo,
-                                      'ONLYGLOBAL': False, 'UTC': 0, 'POI_FILE': None, 'POI_FIELD': '', 'AGE': 35,
-                                      'ACTIVITY': 80, 'CLO': 0.9, 'WEIGHT': 75, 'HEIGHT': 180, 'SEX': 0,
-                                      'SENSOR_HEIGHT': 10,
-                                      'OUTPUT_TMRT': True, 'OUTPUT_KDOWN': False, 'OUTPUT_KUP': False,
-                                      'OUTPUT_LDOWN': False,
-                                      'OUTPUT_LUP': False, 'OUTPUT_SH': False, 'OUTPUT_TREEPLANTER': True,
-                                      'OUTPUT_DIR': output_TreePlanter_SOLWEIG_dir})
+                   {'INPUT_DSM': input_dsm,
+                    'INPUT_SVF': os.path.join(svf_outputs['OUTPUT_DIR'], 'svfs.zip'),
+                    'INPUT_HEIGHT': wallHeightRatioOutputs['OUTPUT_HEIGHT'],
+                    'INPUT_ASPECT': wallHeightRatioOutputs['OUTPUT_ASPECT'],
+                    'INPUT_CDSM': input_cdsm,
+                    'TRANS_VEG': 3, 'INPUT_TDSM': None, 'INPUT_THEIGHT': 25,
+                    'INPUT_LC': None,
+                    'USE_LC_BUILD': False,
+                    'INPUT_DEM': input_dem,
+                    'SAVE_BUILD': False,
+                    'INPUT_ANISO': os.path.join(svf_outputs['OUTPUT_DIR'], 'shadowmats.npz'),
+                    'ALBEDO_WALLS': 0.2, 'ALBEDO_GROUND': 0.15, 'EMIS_WALLS': 0.9,
+                    'EMIS_GROUND': 0.95,
+                    'ABS_S': 0.7, 'ABS_L': 0.95, 'POSTURE': 0, 'CYL': True,
+                    'INPUTMET': input_meteo,
+                    'ONLYGLOBAL': False, 'UTC': 0, 'POI_FILE': None, 'POI_FIELD': '', 'AGE': 35,
+                    'ACTIVITY': 80, 'CLO': 0.9, 'WEIGHT': 75, 'HEIGHT': 180, 'SEX': 0,
+                    'SENSOR_HEIGHT': 10,
+                    'OUTPUT_TMRT': True, 'OUTPUT_KDOWN': False, 'OUTPUT_KUP': False,
+                    'OUTPUT_LDOWN': False,
+                    'OUTPUT_LUP': False, 'OUTPUT_SH': False, 'OUTPUT_TREEPLANTER': True,
+                    'OUTPUT_DIR': output_TreePlanter_SOLWEIG_dir})
 
     processing.run("umep:Outdoor Thermal Comfort: TreePlanter",
-                                  {'SOLWEIG_DIR': output_TreePlanter_SOLWEIG_dir,
-                                   'INPUT_POLYGONLAYER': input_polygonlayer,
-                                   'START_HOUR': 13,
-                                   'END_HOUR': 15,
-                                   'TTYPE': 0,
-                                   'HEIGHT': 10,
-                                   'DIA': 5,
-                                   'TRUNK': 3,
-                                   'TRANS_VEG': 3,
-                                   'NTREE': 3,
-                                   'OUTPUT_CDSM': True, 'OUTPUT_POINTFILE': True, 'OUTPUT_OCCURRENCE': False,
-                                   'OUTPUT_DIR': output_TreePlanter_position, 'ITERATIONS': 2000,
-                                   'INCLUDE_OUTSIDE': True, 'RANDOM_STARTING': False, 'GREEDY_ALGORITHM': False})
+                   {'SOLWEIG_DIR': output_TreePlanter_SOLWEIG_dir,
+                    'INPUT_POLYGONLAYER': input_polygonlayer,
+                    'START_HOUR': 13,
+                    'END_HOUR': 15,
+                    'TTYPE': 0,
+                    'HEIGHT': 10,
+                    'DIA': 5,
+                    'TRUNK': 3,
+                    'TRANS_VEG': 3,
+                    'NTREE': 3,
+                    'OUTPUT_CDSM': True, 'OUTPUT_POINTFILE': True, 'OUTPUT_OCCURRENCE': False,
+                    'OUTPUT_DIR': output_TreePlanter_position, 'ITERATIONS': 2000,
+                    'INCLUDE_OUTSIDE': True, 'RANDOM_STARTING': False, 'GREEDY_ALGORITHM': False})
 
+
+def TreeGenerator(function_input_pointlayer, function_input_dsm, function_input_dem, function_input_cdsm,
+                  function_output_cdsm, function_output_tdsm):
+    processing.run("umep:Spatial Data: Tree Generator",
+                   {
+                       'INPUT_POINTLAYER': function_input_pointlayer,
+                       'TREE_TYPE': 'type', 'TOT_HEIGHT': 'height', 'TRUNK_HEIGHT': 'trunk', 'DIA': 'diameter',
+                       'INPUT_BUILD': None,
+                       'INPUT_DSM': function_input_dsm,
+                       'INPUT_DEM': function_input_dem,
+                       'INPUT_CDSM': function_input_cdsm, 'INPUT_TDSM': None,
+                       'CDSM_GRID_OUT': function_output_cdsm, 'TDSM_GRID_OUT': function_output_tdsm})
+
+
+# This function is right now used to modify the attribute table of the generated trees
+def AttributeTableMod(path, field_name, field_value):
+    layer = QgsVectorLayer(path, providerLib='ogr')
+
+    if not layer.isValid():
+        print("Layer failed to load!")
+    else:
+        print("Layer was loaded successfully!")
+
+    layer.dataProvider().addAttributes([QgsField(field_name, QVariant.String)])
+    layer.updateFields()
+    layer.startEditing()
+    for feature in layer.getFeatures():
+        feature[field_name] = field_value
+        layer.updateFeature(feature)
+    layer.commitChanges()
 
 # SOLWEIG_Example_Goteborg()
-TreePlanter_Example()
+# TreePlanter_Example()
