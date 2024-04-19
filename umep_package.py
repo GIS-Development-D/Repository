@@ -187,7 +187,7 @@ def attributeTableMod(path, field_name, field_value, field_type=QVariant.Int):
         feature.setAttribute(field_name, field_value)
         layer.updateFeature(feature)
     layer.commitChanges()
-    print(f"Field '{field_name}' added as type '{field.typeName()}' and all features updated with the value '{field_value}'.")
+    print(f"Field '{field_name}' added and all features updated with the value '{field_value}'.")
 
 
 # ----------------- SOLWEIG Function Example -----------------
@@ -262,7 +262,7 @@ def treePlanter_Example():
 
     output_dir = "Output_temp"
     output_TreePlanter_SOLWEIG_dir = "Output_TreePlanter"
-    output_TreePlanter_position = os.path.join(output_TreePlanter_SOLWEIG_dir, 'Output_TreePlanter_Position')
+    output_TreePlanter_position = 'Output_TreePlanter_Position'
 
     # Calculates SVF from cropped data
     svf_outputs = skyViewFactor(input_cdsm, input_dsm, output_dir,
@@ -305,8 +305,7 @@ def regenerate_cdsm():
     input_dsm = os.path.join(input_directory, 'DSM.tif')
     input_dem = os.path.join(input_directory, 'DEM.tif')
 
-    output_TreePlanter_SOLWEIG_dir = "Output_TreePlanter"
-    output_TreePlanter_position = os.path.join(output_TreePlanter_SOLWEIG_dir, 'Output_TreePlanter_Position')
+    output_TreePlanter_position = 'Output_TreePlanter_Position'
     input_TreePlanter_layer = os.path.join(output_TreePlanter_position, 'treePlanterPoint.shp')
     output_cdsm = "Output_TreeGenerator/cdsm.tif"
     output_tdsm = "Output_TreeGenerator/tdsm.tif"
