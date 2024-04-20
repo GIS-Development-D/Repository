@@ -251,10 +251,9 @@ def SOLWEIG_Example_Goteborg():
 
 
 # ----------------- TreePlanter Function Example -----------------
-def treePlanter_Example():
+def treePlanter_Example(input_cdsm="Data/TreePlanterTestData/CDSM.tif", tree_planter_flag=True):
     # Input files definition
     input_directory = "Data/TreePlanterTestData"
-    input_cdsm = os.path.join(input_directory, 'CDSM.tif')
     input_dsm = os.path.join(input_directory, 'DSM.tif')
     input_dem = os.path.join(input_directory, 'DEM.tif')
     input_meteo = os.path.join(input_directory, 'metfile.txt')
@@ -282,20 +281,21 @@ def treePlanter_Example():
                                                  'OUTPUT_ASPECT': wallHeightRatioOutputs['OUTPUT_ASPECT']},
                 output_dir=output_TreePlanter_SOLWEIG_dir)
 
-    processing.run("umep:Outdoor Thermal Comfort: TreePlanter",
-                   {'SOLWEIG_DIR': output_TreePlanter_SOLWEIG_dir,
-                    'INPUT_POLYGONLAYER': input_polygonlayer,
-                    'START_HOUR': 13,
-                    'END_HOUR': 15,
-                    'TTYPE': 0,
-                    'HEIGHT': 10,
-                    'DIA': 5,
-                    'TRUNK': 3,
-                    'TRANS_VEG': 3,
-                    'NTREE': 3,
-                    'OUTPUT_CDSM': True, 'OUTPUT_POINTFILE': True, 'OUTPUT_OCCURRENCE': False,
-                    'OUTPUT_DIR': output_TreePlanter_position, 'ITERATIONS': 2000,
-                    'INCLUDE_OUTSIDE': True, 'RANDOM_STARTING': False, 'GREEDY_ALGORITHM': False})
+    if tree_planter_flag:
+        processing.run("umep:Outdoor Thermal Comfort: TreePlanter",
+                       {'SOLWEIG_DIR': output_TreePlanter_SOLWEIG_dir,
+                        'INPUT_POLYGONLAYER': input_polygonlayer,
+                        'START_HOUR': 13,
+                        'END_HOUR': 15,
+                        'TTYPE': 0,
+                        'HEIGHT': 10,
+                        'DIA': 5,
+                        'TRUNK': 3,
+                        'TRANS_VEG': 3,
+                        'NTREE': 3,
+                        'OUTPUT_CDSM': True, 'OUTPUT_POINTFILE': True, 'OUTPUT_OCCURRENCE': False,
+                        'OUTPUT_DIR': output_TreePlanter_position, 'ITERATIONS': 2000,
+                        'INCLUDE_OUTSIDE': True, 'RANDOM_STARTING': False, 'GREEDY_ALGORITHM': False})
 
 
 # ----------------- Update the cdsm with New Trees Example -----------------
@@ -315,7 +315,7 @@ def regenerate_cdsm():
 
 
 # SOLWEIG_Example_Goteborg()
-# treePlanter_Example()
 
-# regenerate_cdsm()
 # treePlanter_Example()
+# regenerate_cdsm()
+# treePlanter_Example(input_cdsm="Output_TreeGenerator/cdsm.tif", tree_planter_flag=False)
