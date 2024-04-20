@@ -2,8 +2,13 @@ import sys
 import os
 from qgis.core import QgsApplication
 from qgis.core import QgsVectorLayer
+from qgis.core import QgsRasterLayer
 from qgis.core import QgsField
 from qgis.core import QgsVectorFileWriter
+from qgis.core import QgsApplication
+from qgis.gui import QgsMapCanvas
+from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtGui import QColor
 from qgis.PyQt.QtCore import QVariant
 
 # ----------------- Initialization of the QGIS related dependencies -----------------
@@ -11,6 +16,9 @@ from qgis.PyQt.QtCore import QVariant
 QgsApplication.setPrefixPath("D:/GIS-Development", True)
 qgs = QgsApplication([], False)
 qgs.initQgis()
+
+# Create the application instance for the GUI
+app = QApplication([])
 
 # This line import the default plugins of the QGIS
 sys.path.append(r'D:\QGIS 3.36.1\apps\qgis\python\plugins')
@@ -204,7 +212,7 @@ def SOLWEIG_Example_Goteborg():
     input_cdsm_filename = input_cdsm.split(".")[0]
 
     # Defines an output directory where will be stored your outputs (and intermediate results)
-    output_dir = "Output_temp"
+    output_dir = "Output_temp_SOLWEIG"
     output_SOLWEIG_dir = "Output_SOLWEIG"
 
     crop_cdsm = cropDatasetWithMask(os.path.join(input_directory, input_cdsm),
@@ -246,7 +254,7 @@ def SOLWEIG_Example_Goteborg():
                 svf_path=os.path.join(svf_outputs['OUTPUT_DIR'], 'svfs.zip'),
                 aniso_path=os.path.join(svf_outputs['OUTPUT_DIR'], 'shadowmats.npz'),
                 wallHeightRatioInputs={'OUTPUT_HEIGHT': wallHeightRatioOutputs['OUTPUT_HEIGHT'],
-                                                 'OUTPUT_ASPECT': wallHeightRatioOutputs['OUTPUT_ASPECT']},
+                                       'OUTPUT_ASPECT': wallHeightRatioOutputs['OUTPUT_ASPECT']},
                 output_dir=output_SOLWEIG_dir)
 
 
@@ -259,8 +267,8 @@ def treePlanter_Example(input_cdsm="Data/TreePlanterTestData/CDSM.tif", tree_pla
     input_meteo = os.path.join(input_directory, 'metfile.txt')
     input_polygonlayer = os.path.join(input_directory, 'planting_area.shp')
 
-    output_dir = "Output_temp"
-    output_TreePlanter_SOLWEIG_dir = "Output_TreePlanter"
+    output_dir = "Output_temp_TreePlanter"
+    output_TreePlanter_SOLWEIG_dir = "Output_TreePlanter_SOLWEIG"
     output_TreePlanter_position = 'Output_TreePlanter_Position'
 
     # Calculates SVF from cropped data
@@ -278,7 +286,7 @@ def treePlanter_Example(input_cdsm="Data/TreePlanterTestData/CDSM.tif", tree_pla
                 svf_path=os.path.join(svf_outputs['OUTPUT_DIR'], 'svfs.zip'),
                 aniso_path=os.path.join(svf_outputs['OUTPUT_DIR'], 'shadowmats.npz'),
                 wallHeightRatioInputs={'OUTPUT_HEIGHT': wallHeightRatioOutputs['OUTPUT_HEIGHT'],
-                                                 'OUTPUT_ASPECT': wallHeightRatioOutputs['OUTPUT_ASPECT']},
+                                       'OUTPUT_ASPECT': wallHeightRatioOutputs['OUTPUT_ASPECT']},
                 output_dir=output_TreePlanter_SOLWEIG_dir)
 
     if tree_planter_flag:
@@ -293,7 +301,8 @@ def treePlanter_Example(input_cdsm="Data/TreePlanterTestData/CDSM.tif", tree_pla
                         'TRUNK': 3,
                         'TRANS_VEG': 3,
                         'NTREE': 3,
-                        'OUTPUT_CDSM': True, 'OUTPUT_POINTFILE': True, 'OUTPUT_OCCURRENCE': False,
+                        # Problem existed in the OUTPUT_CDSM, we use regenerate_cdsm instead
+                        'OUTPUT_CDSM': False, 'OUTPUT_POINTFILE': True, 'OUTPUT_OCCURRENCE': False,
                         'OUTPUT_DIR': output_TreePlanter_position, 'ITERATIONS': 2000,
                         'INCLUDE_OUTSIDE': True, 'RANDOM_STARTING': False, 'GREEDY_ALGORITHM': False})
 
@@ -310,8 +319,46 @@ def regenerate_cdsm():
     output_cdsm = "Output_TreeGenerator/cdsm.tif"
     output_tdsm = "Output_TreeGenerator/tdsm.tif"
 
+    # Modify the attribute table
     attributeTableMod(input_TreePlanter_layer, "ttype", 1)
+
+    # treeGenerator is used to generate the new cdsm
     treeGenerator(input_TreePlanter_layer, input_dsm, input_dem, input_cdsm, output_cdsm, output_tdsm)
+
+
+def visualization_map(layer_path):
+    window = QMainWindow()
+    window.setWindowTitle("Tree Planter Display")
+
+    canvas = QgsMapCanvas()
+    canvas.setCanvasColor(QColor("white"))
+
+    # Determine the layer type based on file extension
+    if layer_path.endswith('.tif') or layer_path.endswith('.jpg'):
+        # Assuming raster formats are .tif or .jpg
+        layer = QgsRasterLayer(layer_path, "Tree Planter DSM")
+        layer_type = "Raster"
+    else:
+        # Default to vector if not a recognized raster format
+        layer = QgsVectorLayer(layer_path, "Tree Planter Vector", "ogr")
+        layer_type = "Vector"
+
+    if not layer.isValid():
+        print(f"Failed to load the {layer_type} layer!")
+    else:
+        canvas.setExtent(layer.extent())
+
+    layers = [layer]
+    canvas.setLayers(layers)
+
+    window.setCentralWidget(canvas)
+    window.resize(800, 600)
+    window.show()
+
+    exit_code = app.exec_()
+
+    qgs.exitQgis()
+    sys.exit(exit_code)
 
 
 # SOLWEIG_Example_Goteborg()
@@ -319,3 +366,5 @@ def regenerate_cdsm():
 # treePlanter_Example()
 # regenerate_cdsm()
 # treePlanter_Example(input_cdsm="Output_TreeGenerator/cdsm.tif", tree_planter_flag=False)
+
+# visualization_map("D:/GIS-Development/Output_TreePlanter_Position/treePlanterPoint.shp")
