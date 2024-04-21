@@ -6,8 +6,12 @@ from qgis.core import QgsRasterLayer
 from qgis.core import QgsField
 from qgis.core import QgsVectorFileWriter
 from qgis.core import QgsApplication
+from qgis.core import QgsProject
+from qgis.core import QgsLayerTreeLayer
+from qgis.core import QgsLayerTreeGroup
+
 from qgis.gui import QgsMapCanvas
-from PyQt5.QtWidgets import QApplication, QMainWindow
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QScrollArea
 from PyQt5.QtGui import QColor
 from qgis.PyQt.QtCore import QVariant
 
@@ -68,7 +72,7 @@ def wallHeightAspect(function_input_cdsm, function_output_height_file, function_
                            'OUTPUT_ASPECT': function_output_aspect_file})
 
 
-def run_solweig(input_dsm, input_cdsm, input_dem, input_meteo, svf_path, aniso_path, wallHeightRatioInputs, output_dir,
+def run_SOLWEIG(input_dsm, input_cdsm, input_dem, input_meteo, svf_path, aniso_path, wallHeightRatioInputs, output_dir,
                 trans_veg=3, t_height=25, albedo_walls=0.2, albedo_ground=0.15, emis_walls=0.9, emis_ground=0.95,
                 abs_s=0.7, abs_l=0.95, posture=0, cyl=True, only_global=False, utc=0, poi_file=None,
                 poi_field='', age=35, activity=80, clo=0.9, weight=75, height=180, sex=0, sensor_height=10):
@@ -247,7 +251,7 @@ def SOLWEIG_Example_Goteborg():
     wallHeightRatioOutputs = wallHeightAspect(crop_dsm["OUTPUT"], os.path.join(output_dir, 'wallHeight.tif'),
                                               os.path.join(output_dir, 'WallAspect.tif'))
 
-    run_solweig(input_dsm=crop_dsm["OUTPUT"],
+    run_SOLWEIG(input_dsm=crop_dsm["OUTPUT"],
                 input_cdsm=crop_cdsm["OUTPUT"],
                 input_dem=crop_dsm["OUTPUT"],
                 input_meteo=os.path.join(input_directory, input_meteo),
@@ -279,7 +283,7 @@ def treePlanter_Example(input_cdsm="Data/TreePlanterTestData/CDSM.tif", tree_pla
     wallHeightRatioOutputs = wallHeightAspect(input_dsm, os.path.join(output_dir, 'wallHeight.tif'),
                                               os.path.join(output_dir, 'WallAspect.tif'))
 
-    run_solweig(input_dsm=input_dsm,
+    run_SOLWEIG(input_dsm=input_dsm,
                 input_cdsm=input_cdsm,
                 input_dem=input_dem,
                 input_meteo=input_meteo,
@@ -293,18 +297,18 @@ def treePlanter_Example(input_cdsm="Data/TreePlanterTestData/CDSM.tif", tree_pla
         processing.run("umep:Outdoor Thermal Comfort: TreePlanter",
                        {'SOLWEIG_DIR': output_TreePlanter_SOLWEIG_dir,
                         'INPUT_POLYGONLAYER': input_polygonlayer,
-                        'START_HOUR': 13,
-                        'END_HOUR': 15,
+                        'START_HOUR': 8,
+                        'END_HOUR': 18,
                         'TTYPE': 0,
-                        'HEIGHT': 10,
-                        'DIA': 5,
-                        'TRUNK': 3,
-                        'TRANS_VEG': 3,
-                        'NTREE': 3,
+                        'HEIGHT': 25,
+                        'DIA': 1.5,
+                        'TRUNK': 15,
+                        'TRANS_VEG': 30,
+                        'NTREE': 50,
                         # Problem existed in the OUTPUT_CDSM, we use regenerate_cdsm instead
-                        'OUTPUT_CDSM': False, 'OUTPUT_POINTFILE': True, 'OUTPUT_OCCURRENCE': False,
+                        'OUTPUT_CDSM': True, 'OUTPUT_POINTFILE': True, 'OUTPUT_OCCURRENCE': False,
                         'OUTPUT_DIR': output_TreePlanter_position, 'ITERATIONS': 2000,
-                        'INCLUDE_OUTSIDE': True, 'RANDOM_STARTING': False, 'GREEDY_ALGORITHM': False})
+                        'INCLUDE_OUTSIDE': True, 'RANDOM_STARTING': False, 'GREEDY_ALGORITHM': True})
 
 
 # ----------------- Update the cdsm with New Trees Example -----------------
@@ -326,45 +330,59 @@ def regenerate_cdsm():
     treeGenerator(input_TreePlanter_layer, input_dsm, input_dem, input_cdsm, output_cdsm, output_tdsm)
 
 
-def visualization_map(layer_path):
+# ----------------- Visualization the Related Result Example -----------------
+def create_multiple_canvases(title):
+    app = QApplication(sys.argv)
     window = QMainWindow()
-    window.setWindowTitle("Tree Planter Display")
+    window.setWindowTitle(title)
 
-    canvas = QgsMapCanvas()
-    canvas.setCanvasColor(QColor("white"))
+    container = QWidget()
+    layout = QHBoxLayout()
 
-    # Determine the layer type based on file extension
-    if layer_path.endswith('.tif') or layer_path.endswith('.jpg'):
-        # Assuming raster formats are .tif or .jpg
-        layer = QgsRasterLayer(layer_path, "Tree Planter DSM")
-        layer_type = "Raster"
-    else:
-        # Default to vector if not a recognized raster format
-        layer = QgsVectorLayer(layer_path, "Tree Planter Vector", "ogr")
-        layer_type = "Vector"
+    canvas1 = QgsMapCanvas()
+    canvas1.setCanvasColor(QColor("white"))
+    layer1 = QgsRasterLayer("D:/GIS-Development/SOLWEIG_Analysis_Initial.tif", "Layer 1")
+    if layer1.isValid():
+        canvas1.setLayers([layer1])
+    canvas1.zoomToFullExtent()
 
-    if not layer.isValid():
-        print(f"Failed to load the {layer_type} layer!")
-    else:
-        canvas.setExtent(layer.extent())
+    canvas2 = QgsMapCanvas()
+    canvas2.setCanvasColor(QColor("white"))
+    layer2 = QgsRasterLayer("D:/GIS-Development/SOLWEIG_Analysis_Improved.tif", "Layer 2")
+    if layer2.isValid():
+        canvas2.setLayers([layer2])
+    canvas2.zoomToFullExtent()
 
-    layers = [layer]
-    canvas.setLayers(layers)
+    layout.addWidget(canvas1)
+    layout.addWidget(canvas2)
 
-    window.setCentralWidget(canvas)
-    window.resize(800, 600)
+    container.setLayout(layout)
+    window.setCentralWidget(container)
+    window.resize(1600, 1600)
     window.show()
 
     exit_code = app.exec_()
-
-    qgs.exitQgis()
     sys.exit(exit_code)
+
+
+def SOLWEIG_Analysis(solweig_dir="Output_TreePlanter_SOLWEIG", stat_out="SOLWEIG_Analysis.tif",
+                     tmrt_stat_out="SOLWEIG_Analysis_Trmt.tif", stat_type=0):
+    return processing.run("umep:Outdoor Thermal Comfort: SOLWEIG Analyzer",
+                          {'SOLWEIG_DIR': solweig_dir, 'BUILDINGS': None, 'VARIA_IN': 0,
+                           'STAT_TYPE': stat_type, 'THRES_TYPE': 1, 'TMRT_THRES_NUM': 50,
+                           'STAT_OUT': stat_out, 'TMRT_STAT_OUT': tmrt_stat_out})
 
 
 # SOLWEIG_Example_Goteborg()
 
-# treePlanter_Example()
-# regenerate_cdsm()
-# treePlanter_Example(input_cdsm="Output_TreeGenerator/cdsm.tif", tree_planter_flag=False)
+treePlanter_Example()
+SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Initial.tif",
+                 tmrt_stat_out="SOLWEIG_Analysis_Initial_tmrt.tif")
 
-# visualization_map("D:/GIS-Development/Output_TreePlanter_Position/treePlanterPoint.shp")
+regenerate_cdsm()
+treePlanter_Example(input_cdsm="Output_TreeGenerator/cdsm.tif", tree_planter_flag=False)
+SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Improved.tif",
+                 tmrt_stat_out="SOLWEIG_Analysis_Improved_tmrt.tif")
+
+# Example usage
+# create_multiple_canvases(title="SOLWEIG_Analysis_DayTime")
