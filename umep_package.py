@@ -1,18 +1,14 @@
 import sys
 import os
+from tqdm import tqdm
 from qgis.core import QgsApplication
+from qgis.core import QgsCoordinateReferenceSystem
 from qgis.core import QgsVectorLayer
 from qgis.core import QgsRasterLayer
 from qgis.core import QgsField
-from qgis.core import QgsVectorFileWriter
-from qgis.core import QgsApplication
-from qgis.core import QgsProject
-from qgis.core import QgsLayerTreeLayer
-from qgis.core import QgsLayerTreeGroup
 
-from qgis.gui import QgsMapCanvas
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QHBoxLayout, QScrollArea
-from PyQt5.QtGui import QColor
+
+from PyQt5.QtWidgets import QApplication
 from qgis.PyQt.QtCore import QVariant
 
 # ----------------- Initialization of the QGIS related dependencies -----------------
@@ -177,7 +173,6 @@ def attributeTableMod(path, field_name, field_value, field_type=QVariant.Int):
     if not layer.isValid():
         print("Layer failed to load!")
         return
-
     print("Layer was loaded successfully!")
 
     # Check if the field already exists
@@ -275,13 +270,17 @@ def treePlanter_Example(input_cdsm="Data/TreePlanterTestData/CDSM.tif", tree_pla
     output_TreePlanter_SOLWEIG_dir = "Output_TreePlanter_SOLWEIG"
     output_TreePlanter_position = 'Output_TreePlanter_Position'
 
+    pbar = tqdm(total=4)  # 假设有4个主要步骤
+
     # Calculates SVF from cropped data
     svf_outputs = skyViewFactor(input_cdsm, input_dsm, output_dir,
                                 os.path.join(output_dir, 'SkyViewFactor.tif'))
+    pbar.update(1)
 
     # Calculates wall height and wall aspect from cropped data
     wallHeightRatioOutputs = wallHeightAspect(input_dsm, os.path.join(output_dir, 'wallHeight.tif'),
                                               os.path.join(output_dir, 'WallAspect.tif'))
+    pbar.update(1)
 
     run_SOLWEIG(input_dsm=input_dsm,
                 input_cdsm=input_cdsm,
@@ -292,6 +291,7 @@ def treePlanter_Example(input_cdsm="Data/TreePlanterTestData/CDSM.tif", tree_pla
                 wallHeightRatioInputs={'OUTPUT_HEIGHT': wallHeightRatioOutputs['OUTPUT_HEIGHT'],
                                        'OUTPUT_ASPECT': wallHeightRatioOutputs['OUTPUT_ASPECT']},
                 output_dir=output_TreePlanter_SOLWEIG_dir)
+    pbar.update(1)
 
     if tree_planter_flag:
         processing.run("umep:Outdoor Thermal Comfort: TreePlanter",
@@ -309,6 +309,8 @@ def treePlanter_Example(input_cdsm="Data/TreePlanterTestData/CDSM.tif", tree_pla
                         'OUTPUT_CDSM': True, 'OUTPUT_POINTFILE': True, 'OUTPUT_OCCURRENCE': False,
                         'OUTPUT_DIR': output_TreePlanter_position, 'ITERATIONS': 2000,
                         'INCLUDE_OUTSIDE': True, 'RANDOM_STARTING': False, 'GREEDY_ALGORITHM': True})
+        pbar.update(1)
+    pbar.close()
 
 
 # ----------------- Update the cdsm with New Trees Example -----------------
@@ -330,41 +332,6 @@ def regenerate_cdsm():
     treeGenerator(input_TreePlanter_layer, input_dsm, input_dem, input_cdsm, output_cdsm, output_tdsm)
 
 
-# ----------------- Visualization the Related Result Example -----------------
-def create_multiple_canvases(title):
-    app = QApplication(sys.argv)
-    window = QMainWindow()
-    window.setWindowTitle(title)
-
-    container = QWidget()
-    layout = QHBoxLayout()
-
-    canvas1 = QgsMapCanvas()
-    canvas1.setCanvasColor(QColor("white"))
-    layer1 = QgsRasterLayer("D:/GIS-Development/SOLWEIG_Analysis_Initial.tif", "Layer 1")
-    if layer1.isValid():
-        canvas1.setLayers([layer1])
-    canvas1.zoomToFullExtent()
-
-    canvas2 = QgsMapCanvas()
-    canvas2.setCanvasColor(QColor("white"))
-    layer2 = QgsRasterLayer("D:/GIS-Development/SOLWEIG_Analysis_Improved.tif", "Layer 2")
-    if layer2.isValid():
-        canvas2.setLayers([layer2])
-    canvas2.zoomToFullExtent()
-
-    layout.addWidget(canvas1)
-    layout.addWidget(canvas2)
-
-    container.setLayout(layout)
-    window.setCentralWidget(container)
-    window.resize(1600, 1600)
-    window.show()
-
-    exit_code = app.exec_()
-    sys.exit(exit_code)
-
-
 def SOLWEIG_Analysis(solweig_dir="Output_TreePlanter_SOLWEIG", stat_out="SOLWEIG_Analysis.tif",
                      tmrt_stat_out="SOLWEIG_Analysis_Trmt.tif", stat_type=0):
     return processing.run("umep:Outdoor Thermal Comfort: SOLWEIG Analyzer",
@@ -375,14 +342,11 @@ def SOLWEIG_Analysis(solweig_dir="Output_TreePlanter_SOLWEIG", stat_out="SOLWEIG
 
 # SOLWEIG_Example_Goteborg()
 
+# The workflow of the green infrastructure solution
 treePlanter_Example()
 SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Initial.tif",
                  tmrt_stat_out="SOLWEIG_Analysis_Initial_tmrt.tif")
-
 regenerate_cdsm()
 treePlanter_Example(input_cdsm="Output_TreeGenerator/cdsm.tif", tree_planter_flag=False)
 SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Improved.tif",
                  tmrt_stat_out="SOLWEIG_Analysis_Improved_tmrt.tif")
-
-# Example usage
-# create_multiple_canvases(title="SOLWEIG_Analysis_DayTime")
