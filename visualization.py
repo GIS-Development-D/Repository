@@ -1,8 +1,8 @@
 from osgeo import gdal
 import matplotlib.pyplot as plt
 
-file_path1 = 'SOLWEIG_Analysis_Initial_tmrt.tif'
-file_path2 = 'SOLWEIG_Analysis_Improved_tmrt.tif'
+file_path1 = 'SOLWEIG_Analysis_Initial.tif'
+file_path2 = 'SOLWEIG_Analysis_Improved.tif'
 
 ds1 = gdal.Open(file_path1)
 if ds1 is None:
@@ -24,10 +24,10 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
 cax1 = ax1.imshow(data1, cmap='gray')
 fig.colorbar(cax1, ax=ax1, orientation='vertical')
-ax1.set_title('Tmrt before planting trees')
+ax1.set_title('Before planting trees')
 
 cax2 = ax2.imshow(data2, cmap='gray')
 fig.colorbar(cax2, ax=ax2, orientation='vertical')
-ax2.set_title('Tmrt after planting trees')
+ax2.set_title('After planting trees')
 
 plt.show()
