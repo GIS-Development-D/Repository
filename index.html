@@ -3,47 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interaktiivinen kartta</title>
-    <!-- Leaflet CSS-tiedosto -->
+    <title>Umep solution</title>
+    <!-- Leaflet CSS-file -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <style>
         #mapid {
             height: 400px;
             width: 600px;
         }
+        #settings {
+        display: none;
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>Umep solution</h1>
     <div id="mapid"></div>
-    <button onclick="zoomIn()">Zoom in</button>
-    <button onclick="zoomOut()">Zoom out</button>
+    <button onclick="toggleSettings()">Settings</button>
+    <button onclick="runPythonCode()">Run UMEP</button>
     <button onclick="panToCenter()">Pan to center</button>
+    <div id="output"></div>
+    <div id="settings">
+        <label for="upperPoint">upper (lat, lon):</label>
+        <input type="text" id="upperPoint" placeholder="esim. 60.1695, 24.9354"><br>
+        <label for="lowerPoint">lower (lat, lon):</label>
+        <input type="text" id="lowerPoint" placeholder="esim. 60.1695, 24.9354"><br>
+        <button onclick="applyBoundingBox()">Accept</button>
 
-    <!-- Leaflet JavaScript-tiedosto -->
+    <!-- Leaflet JavaScript-file -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script>
+        // markers
+        var upperMarker, lowerMarker;
+
         // a map
-        var mymap = L.map('mapid').setView([51.505, -0.09], 13);
+        var mymap = L.map('mapid').setView([60.17, 24.94], 12);
 
         // add OpenStreetMap
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(mymap);
 
-        // Zoom in
-        function zoomIn() {
-            mymap.zoomIn();
+        // settings on/off
+        function toggleSettings() {
+            var settingsDiv = document.getElementById("settings");
+            if (settingsDiv.style.display === "none") {
+                settingsDiv.style.display = "block";
+            } else {
+                settingsDiv.style.display = "none";
+            }
+            
         }
 
-        // Zoom out
-        function zoomOut() {
-            mymap.zoomOut();
+        function applyBoundingBox() {
+            var upperPoint = document.getElementById("upperPoint").value.split(",");
+            var lowerPoint = document.getElementById("lowerPoint").value.split(",");
+            if (upperPoint.length !== 2 || lowerPoint.length !== 2) {
+                alert("bad coordinates!");
+                return;
+            }
+            if (upperMarker) {
+                mymap.removeLayer(upperMarker);
+            }
+            if (lowerMarker) {
+                mymap.removeLayer(lowerMarker);
+            }
+            upperMarker = L.marker([parseFloat(upperPoint[0]), parseFloat(upperPoint[1])]).addTo(mymap);
+            lowerMarker = L.marker([parseFloat(lowerPoint[0]), parseFloat(lowerPoint[1])]).addTo(mymap);
+            var bounds = [upperMarker.getLatLng(), lowerMarker.getLatLng()];
+            L.rectangle(bounds, {color: "#ff7800", weight: 1}).addTo(mymap);
+        }
+
+        // listener to map
+        mymap.on('click', function(e) {
+            var latlng = e.latlng;
+            var coordinates = [latlng.lat.toFixed(4), latlng.lng.toFixed(4)].join(', ');
+            var userInput = prompt("Choose point by clicking the map.\nCoordinates: " + coordinates);
+            if (!userInput) return;
+            var inputField = document.activeElement;
+            inputField.value = coordinates;
+            applyBoundingBox();
+        });
+        
+
+        // running python
+        function runPythonCode() {
+            document.getElementById("output").innerText = "Running Python code...";
+            // call python umep code there somehow !!!
+         
         }
 
         // pan to center
         function panToCenter() {
-            mymap.setView([51.505, -0.09], 13);
+            mymap.setView([60.17, 24.94], 12);
         }
     </script>
 </body>
