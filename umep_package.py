@@ -2,11 +2,15 @@ import sys
 import os
 from tqdm import tqdm
 from qgis.core import QgsApplication
-from qgis.core import QgsCoordinateReferenceSystem
+from qgis.core import QgsCoordinateTransform
 from qgis.core import QgsVectorLayer
 from qgis.core import QgsRasterLayer
 from qgis.core import QgsField
-
+from qgis.core import QgsProject
+from qgis.core import QgsRasterFileWriter
+from qgis.core import QgsRasterPipe
+from qgis.core import QgsRasterProjector
+from osgeo import ogr, osr
 
 from PyQt5.QtWidgets import QApplication
 from qgis.PyQt.QtCore import QVariant
@@ -270,7 +274,7 @@ def treePlanter_Example(input_cdsm="Data/TreePlanterTestData/CDSM.tif", tree_pla
     output_TreePlanter_SOLWEIG_dir = "Output_TreePlanter_SOLWEIG"
     output_TreePlanter_position = 'Output_TreePlanter_Position'
 
-    pbar = tqdm(total=4)  # 假设有4个主要步骤
+    pbar = tqdm(total=4)
 
     # Calculates SVF from cropped data
     svf_outputs = skyViewFactor(input_cdsm, input_dsm, output_dir,
@@ -313,6 +317,109 @@ def treePlanter_Example(input_cdsm="Data/TreePlanterTestData/CDSM.tif", tree_pla
     pbar.close()
 
 
+# ----------------- URock preparation Example -----------------
+def URock_prepare(input_dsm, input_dem, input_cdsm, input_building, output_building, output_vegetation):
+    processing.run("umep:Urban Wind Field: URock Prepare",
+                   {'INPUT_BUILD_FOOTPRINT': input_building,
+                    'INPUT_BUILD_DSM': input_dsm,
+                    'INPUT_BUILD_DEM': input_dem,
+                    'INPUT_VEG_CDSM': input_cdsm,
+                    'INPUT_VEG_POINTS': None,
+                    'HEIGHT_VEG_FIELD': '',
+                    'RADIUS_VEG_FIELD': '',
+                    'VEGETATION_ASPECT': '0.75',
+                    'BUILDINGS_WITH_HEIGHT': output_building,
+                    'OUTPUT_BUILD_HEIGHT_FIELD': 'ROOF_HEIGHT',
+                    'VEGETATION_WITH_HEIGHT': output_vegetation,
+                    'OUTPUT_VEG_HEIGHT_FIELD': 'VEG_HEIGHT'})
+
+    return output_building, output_vegetation
+
+
+# ----------------- URock analysis Example -----------------
+def URock(input_buildings, input_building_height, input_vegetation, input_vegetation_height, output_urock,
+          output_filename, wind_height=1.5):
+    processing.run("umep:Urban Wind Field: URock", {'BUILDINGS': input_buildings,
+                                                    'HEIGHT_FIELD_BUILD': input_building_height,
+                                                    'VEGETATION': input_vegetation,
+                                                    'VEGETATION_CROWN_TOP_HEIGHT': input_vegetation_height,
+                                                    'VEGETATION_CROWN_BASE_HEIGHT': '', 'ATTENUATION_FIELD': '',
+                                                    'INPUT_PROFILE_FILE': '', 'INPUT_PROFILE_TYPE': 0,
+                                                    'INPUT_WIND_HEIGHT': 10, 'INPUT_WIND_SPEED': 2,
+                                                    'INPUT_WIND_DIRECTION': 45, 'RASTER_OUTPUT': None,
+                                                    'HORIZONTAL_RESOLUTION': 2, 'VERTICAL_RESOLUTION': 2,
+                                                    'WIND_HEIGHT': wind_height,
+                                                    'UROCK_OUTPUT': output_urock,
+                                                    'OUTPUT_FILENAME': output_filename, 'SAVE_RASTER': True,
+                                                    'SAVE_VECTOR': True, 'SAVE_NETCDF': False, 'LOAD_OUTPUT': False})
+
+
+def transform_coordinate_vector_layer(input_file, output_file, target_crs=3006):
+    target_proj = osr.SpatialReference()
+    target_proj.ImportFromEPSG(target_crs)
+
+    ds = ogr.Open(input_file, 0)  # 0 means read-only mode
+    layer = ds.GetLayer(0)
+
+    driver = ogr.GetDriverByName('GPKG')
+    out_ds = driver.CreateDataSource(output_file)  # 指定新文件的名字
+    out_layer = out_ds.CreateLayer(layer.GetName(), target_proj, layer.GetGeomType())
+
+    layer_defn = layer.GetLayerDefn()
+    for i in range(layer_defn.GetFieldCount()):
+        field_defn = layer_defn.GetFieldDefn(i)
+        out_layer.CreateField(field_defn)
+
+    transform = osr.CoordinateTransformation(layer.GetSpatialRef(), target_proj)
+    for feature in layer:
+        geom = feature.GetGeometryRef()
+        geom.Transform(transform)
+
+        new_feature = ogr.Feature(out_layer.GetLayerDefn())
+        new_feature.SetGeometry(geom)
+        for i in range(layer_defn.GetFieldCount()):
+            new_feature.SetField(layer_defn.GetFieldDefn(i).GetNameRef(), feature.GetField(i))
+        out_layer.CreateFeature(new_feature)
+
+    del ds
+    del out_ds
+
+
+def transform_coordinate_raster_layer(input_file, output_file, target_crs='EPSG:3006'):
+
+    raster_layer = QgsRasterLayer(input_file, 'Original Raster')
+    if not raster_layer.isValid():
+        print("Loaded layer that would be transformed failed!")
+    else:
+        print("Loaded layer that would be transformed successfully!")
+        source_crs = raster_layer.crs()
+        target_crs = QgsCoordinateReferenceSystem(target_crs)
+
+        transform_context = QgsProject.instance().transformContext()
+        coord_transform = QgsCoordinateTransform(source_crs, target_crs, transform_context)
+
+        raster_projector = QgsRasterProjector()
+        raster_projector.setCrs(source_crs, target_crs, transform_context)
+
+        pipe = QgsRasterPipe()
+        pipe.set(raster_layer.dataProvider().clone())
+        pipe.insert(2, raster_projector)
+
+        writer = QgsRasterFileWriter(output_file)
+        error = writer.writeRaster(
+            pipe,
+            raster_layer.width(),
+            raster_layer.height(),
+            raster_layer.extent(),
+            target_crs
+        )
+
+        if error == QgsRasterFileWriter.NoError:
+            print("Raster file reprojected and saved successfully.")
+        else:
+            print("Failed to reproject raster file: Error code", error)
+
+
 # ----------------- Update the cdsm with New Trees Example -----------------
 def regenerate_cdsm():
     input_directory = "Data/TreePlanterTestData"
@@ -342,11 +449,33 @@ def SOLWEIG_Analysis(solweig_dir="Output_TreePlanter_SOLWEIG", stat_out="SOLWEIG
 
 # SOLWEIG_Example_Goteborg()
 
-# The workflow of the green infrastructure solution
-treePlanter_Example()
-SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Initial.tif",
-                 tmrt_stat_out="SOLWEIG_Analysis_Initial_tmrt.tif")
-regenerate_cdsm()
-treePlanter_Example(input_cdsm="Output_TreeGenerator/cdsm.tif", tree_planter_flag=False)
-SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Improved.tif",
-                 tmrt_stat_out="SOLWEIG_Analysis_Improved_tmrt.tif")
+# ----------------- The workflow of the green infrastructure solution -----------------
+# treePlanter_Example()
+# SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Initial.tif",
+#                  tmrt_stat_out="SOLWEIG_Analysis_Initial_tmrt.tif")
+# regenerate_cdsm()
+# treePlanter_Example(input_cdsm="Output_TreeGenerator/cdsm.tif", tree_planter_flag=False)
+# SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Improved.tif",
+#                  tmrt_stat_out="SOLWEIG_Analysis_Improved_tmrt.tif")
+
+# ----------------- The workflow of the URock(wind speed) analysis -----------------
+# prepared_building, prepared_vegetation = URock_prepare(input_dsm='URock/Annedal_EPSG3006/dsm.tif',
+#                                                        input_dem='URock/Annedal_EPSG3006/dem.tif',
+#                                                        input_cdsm='URock/Annedal_EPSG3006/cdsm.tif',
+#                                                        input_building='URock/Annedal_EPSG3006/buildings.shp',
+#                                                        output_building='URock/Output/building_urock.gpkg',
+#                                                        output_vegetation='URock/Output/veg_urock.gpkg')
+# transform_coordinate_vector_layer(input_file=prepared_building, output_file="URock/Output/building_urock_3006.gpkg")
+# transform_coordinate_vector_layer(input_file=prepared_vegetation, output_file="URock/Output/veg_urock_3006.gpkg")
+#
+# URock(input_buildings="URock/Output/building_urock_3006.gpkg",
+#       input_building_height='ROOF_HEIGHT',
+#       input_vegetation="URock/Output/veg_urock_3006.gpkg",
+#       input_vegetation_height='VEG_HEIGHT',
+#       output_urock='URock/Output',
+#       output_filename='urock_output',
+#       wind_height=1.5)
+#
+# transform_coordinate_raster_layer(input_file="URock/Output/z1_5/urock_outputWS.Gtiff",
+#                                   output_file="URock/Output/z1_5/urock_outputWS_3006.Gtiff",
+#                                   target_crs='EPSG:3006')
