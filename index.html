@@ -28,10 +28,13 @@
     <div id="output"></div>
     <div id="settings">
         <label for="upperPoint">upper (lat, lon):</label>
-        <input type="text" id="upperPoint" placeholder="esim. 60.1695, 24.9354"><br>
+        <input type="text" id="upperPoint" placeholder="esim. 60.1, 24.9">
+        <button onclick="selectUpperPoint()">Choose by clicking the map</button><br>
         <label for="lowerPoint">lower (lat, lon):</label>
-        <input type="text" id="lowerPoint" placeholder="esim. 60.1695, 24.9354"><br>
+        <input type="text" id="lowerPoint" placeholder="esim. 60.1, 24.9">
+        <button onclick="selectLowerPoint()">Choose by clicking the map</button><br>
         <button onclick="applyBoundingBox()">Accept</button>
+        <button onclick="removeBoundingBox()">Remove bbox</button><br>
 
     <!-- Leaflet JavaScript-file -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
@@ -39,11 +42,21 @@
         // markers
         var upperMarker, lowerMarker;
 
+        // bbox
+        var rectangle
+
         // a map
         var mymap = L.map('mapid').setView([60.17, 24.94], 12);
 
+        var heartIcon = L.icon({
+            iconUrl: 'https://emojicdn.elk.sh/❤️',
+            iconSize: [40, 40],
+            iconAnchor: [20, 40],
+            popupAnchor: [0, -35],
+        });
+
         // add OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(mymap);
 
@@ -65,27 +78,51 @@
                 alert("bad coordinates!");
                 return;
             }
+            if (rectangle) {
+                mymap.removeLayer(rectangle);
+            }
             if (upperMarker) {
                 mymap.removeLayer(upperMarker);
             }
             if (lowerMarker) {
                 mymap.removeLayer(lowerMarker);
             }
-            upperMarker = L.marker([parseFloat(upperPoint[0]), parseFloat(upperPoint[1])]).addTo(mymap);
-            lowerMarker = L.marker([parseFloat(lowerPoint[0]), parseFloat(lowerPoint[1])]).addTo(mymap);
+            upperMarker = L.marker([parseFloat(upperPoint[0]), parseFloat(upperPoint[1])], {icon: heartIcon}).addTo(mymap);
+            lowerMarker = L.marker([parseFloat(lowerPoint[0]), parseFloat(lowerPoint[1])], {icon: heartIcon}).addTo(mymap);
             var bounds = [upperMarker.getLatLng(), lowerMarker.getLatLng()];
-            L.rectangle(bounds, {color: "#ff7800", weight: 1}).addTo(mymap);
+            rectangle = L.rectangle(bounds, {color: "#FF69B4", weight: 1}).addTo(mymap);
         }
+
+        function removeBoundingBox() {
+            if (rectangle) {
+                mymap.removeLayer(rectangle);
+            }
+            if (upperMarker) {
+                mymap.removeLayer(upperMarker);
+            }
+            if (lowerMarker) {
+                mymap.removeLayer(lowerMarker);
+            }
+        }
+
+        // selecting upper/lower points
+        function selectUpperPoint() {
+            activeInput = "upperPoint";
+        }
+
+        function selectLowerPoint() {
+            activeInput = "lowerPoint";
+        }
+
 
         // listener to map
         mymap.on('click', function(e) {
+            if (!activeInput) return;
             var latlng = e.latlng;
             var coordinates = [latlng.lat.toFixed(4), latlng.lng.toFixed(4)].join(', ');
-            var userInput = prompt("Choose point by clicking the map.\nCoordinates: " + coordinates);
-            if (!userInput) return;
-            var inputField = document.activeElement;
+            var inputField = document.getElementById(activeInput);
             inputField.value = coordinates;
-            applyBoundingBox();
+            activeInput = null;
         });
         
 
@@ -100,6 +137,7 @@
         function panToCenter() {
             mymap.setView([60.17, 24.94], 12);
         }
+
     </script>
 </body>
 </html>
