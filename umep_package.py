@@ -25,14 +25,14 @@ qgs.initQgis()
 app = QApplication([])
 
 # This line import the default plugins of the QGIS
-sys.path.append(r'D:\QGIS 3.36.1\apps\qgis\python\plugins')
+sys.path.append(r'C:\Program Files\QGIS 3.36.0\apps\qgis\python\plugins')
 import processing
 from processing.core.Processing import Processing
 
 # It is important to initialize a Processing before using it
 Processing.initialize()
 # Remember to change it as your own local path of the QGIS plugins(This is for UMEP tools)
-sys.path.append(r'C:\Users\ASUS\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins')
+sys.path.append(r'C:\Users\ilkka\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins')
 from processing_umep.processing_umep_provider import ProcessingUMEPProvider
 from qgis.core import QgsCoordinateReferenceSystem
 
