@@ -22,9 +22,9 @@
 <body>
     <h1>Umep solution</h1>
     <div id="mapid"></div>
-    <button onclick="toggleSettings()">Settings</button>
+    <button onclick="toggleSettings()">Select Bounding Box</button>
     <button onclick="runPythonCode()">Run UMEP</button>
-    <button onclick="panToCenter()">Pan to center</button>
+    <button onclick="panToCenter()">Pan To Center</button>
     <div id="output"></div>
     <div id="settings">
         <label for="upperPoint">upper (lat, lon):</label>
@@ -38,6 +38,7 @@
 
     <!-- Leaflet JavaScript-file -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-geotiff/leaflet-geotiff.js"></script>
     <script>
         // markers
         var upperMarker, lowerMarker;
@@ -46,7 +47,9 @@
         var rectangle
 
         // a map
-        var mymap = L.map('mapid').setView([60.17, 24.94], 12);
+        // Helsinki [60.17, 24.94]
+        // gothenburg [57.71, 11.96]
+        var mymap = L.map('mapid').setView([57.71, 11.96], 12);
 
         var heartIcon = L.icon({
             iconUrl: 'https://emojicdn.elk.sh/❤️',
@@ -125,12 +128,18 @@
             activeInput = null;
         });
         
-
+        
         // running python
         function runPythonCode() {
+            
             document.getElementById("output").innerText = "Running Python code..";
             // call python umep code there somehow !!!
-         
+
+            // add output tiff-file to map
+            var path = 'Output_SOLWEIG\buildings.tif'
+            L.leafletGeotiff(path).addTo(mymap);
+
+            document.getElementById("output").innerText = "Processing ready!";
         }
 
         // pan to center
