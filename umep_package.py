@@ -75,7 +75,8 @@ def wallHeightAspect(function_input_cdsm, function_output_height_file, function_
 def run_SOLWEIG(input_dsm, input_cdsm, input_dem, input_meteo, svf_path, aniso_path, wallHeightRatioInputs, output_dir,
                 trans_veg=3, t_height=25, albedo_walls=0.2, albedo_ground=0.15, emis_walls=0.9, emis_ground=0.95,
                 abs_s=0.7, abs_l=0.95, posture=0, cyl=True, only_global=False, utc=0, poi_file=None,
-                poi_field='', age=35, activity=80, clo=0.9, weight=75, height=180, sex=0, sensor_height=10):
+                poi_field='', age=35, activity=80, clo=0.9, weight=75, height=180, sex=0, sensor_height=10,
+                output_treePlanter=True):
     """
     Run the SOLWEIG model for outdoor thermal comfort.
 
@@ -133,7 +134,7 @@ def run_SOLWEIG(input_dsm, input_cdsm, input_dem, input_meteo, svf_path, aniso_p
         'OUTPUT_LDOWN': False,
         'OUTPUT_LUP': False,
         'OUTPUT_SH': False,
-        'OUTPUT_TREEPLANTER': True,
+        'OUTPUT_TREEPLANTER': output_treePlanter,
         'OUTPUT_DIR': output_dir
     }
 
@@ -229,7 +230,8 @@ def SOLWEIG_Example_Helsinki():
                 aniso_path=os.path.join(svf_outputs['OUTPUT_DIR'], 'shadowmats.npz'),
                 wallHeightRatioInputs={'OUTPUT_HEIGHT': wallHeightRatioOutputs['OUTPUT_HEIGHT'],
                                        'OUTPUT_ASPECT': wallHeightRatioOutputs['OUTPUT_ASPECT']},
-                output_dir=output_SOLWEIG_dir)
+                output_dir=output_SOLWEIG_dir,
+                output_treePlanter=False)
 
 
 # ----------------- SOLWEIG Function Example -----------------
