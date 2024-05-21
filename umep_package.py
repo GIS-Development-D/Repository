@@ -75,7 +75,8 @@ def wallHeightAspect(function_input_cdsm, function_output_height_file, function_
 def run_SOLWEIG(input_dsm, input_cdsm, input_dem, input_meteo, svf_path, aniso_path, wallHeightRatioInputs, output_dir,
                 trans_veg=3, t_height=25, albedo_walls=0.2, albedo_ground=0.15, emis_walls=0.9, emis_ground=0.95,
                 abs_s=0.7, abs_l=0.95, posture=0, cyl=True, only_global=False, utc=0, poi_file=None,
-                poi_field='', age=35, activity=80, clo=0.9, weight=75, height=180, sex=0, sensor_height=10):
+                poi_field='', age=35, activity=80, clo=0.9, weight=75, height=180, sex=0, sensor_height=10,
+                output_treePlanter=True):
     """
     Run the SOLWEIG model for outdoor thermal comfort.
 
@@ -133,7 +134,7 @@ def run_SOLWEIG(input_dsm, input_cdsm, input_dem, input_meteo, svf_path, aniso_p
         'OUTPUT_LDOWN': False,
         'OUTPUT_LUP': False,
         'OUTPUT_SH': False,
-        'OUTPUT_TREEPLANTER': True,
+        'OUTPUT_TREEPLANTER': output_treePlanter,
         'OUTPUT_DIR': output_dir
     }
 
@@ -199,6 +200,38 @@ def attributeTableMod(path, field_name, field_value, field_type=QVariant.Int):
         layer.updateFeature(feature)
     layer.commitChanges()
     print(f"Field '{field_name}' added and all features updated with the value '{field_value}'.")
+
+
+# ----------------- SOLWEIG Function Example Helsinki-----------------
+def SOLWEIG_Example_Helsinki():
+    # Input files definition
+    input_directory = "Helsinki_Data"
+    input_dsm = os.path.join(input_directory, 'DSM aligned.tif')
+    input_dem = os.path.join(input_directory, 'DEM aligned.tif')
+    input_meteo = os.path.join(input_directory, 'UMEP-compatible meteorological data 05-08.2023.txt')
+
+    # Defines an output directory where will be stored your outputs (and intermediate results)
+    output_dir = "Output_temp_SOLWEIG"
+    output_SOLWEIG_dir = "Output_Helsinki_Data"
+
+    # Calculates SVF from cropped data
+    svf_outputs = skyViewFactor("", input_dsm, output_dir,
+                                os.path.join(output_dir, 'SkyViewFactor.tif'))
+
+    # Calculates wall height and wall aspect from cropped data
+    wallHeightRatioOutputs = wallHeightAspect(input_dsm, os.path.join(output_dir, 'wallHeight.tif'),
+                                              os.path.join(output_dir, 'WallAspect.tif'))
+
+    run_SOLWEIG(input_dsm=input_dsm,
+                input_cdsm="",
+                input_dem=input_dem,
+                input_meteo=input_meteo,
+                svf_path=os.path.join(svf_outputs['OUTPUT_DIR'], 'svfs.zip'),
+                aniso_path=os.path.join(svf_outputs['OUTPUT_DIR'], 'shadowmats.npz'),
+                wallHeightRatioInputs={'OUTPUT_HEIGHT': wallHeightRatioOutputs['OUTPUT_HEIGHT'],
+                                       'OUTPUT_ASPECT': wallHeightRatioOutputs['OUTPUT_ASPECT']},
+                output_dir=output_SOLWEIG_dir,
+                output_treePlanter=False)
 
 
 # ----------------- SOLWEIG Function Example -----------------
@@ -448,6 +481,7 @@ def SOLWEIG_Analysis(solweig_dir="Output_TreePlanter_SOLWEIG", stat_out="SOLWEIG
 
 
 # SOLWEIG_Example_Goteborg()
+SOLWEIG_Example_Helsinki()
 
 # ----------------- The workflow of the green infrastructure solution -----------------
 # treePlanter_Example()
