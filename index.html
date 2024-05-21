@@ -20,13 +20,13 @@
     </style>
 </head>
 <body>
-    <h1>Umep solution</h1>
+    <h1>Outdoor Thermal Comfort Improvement Analysis In Helsinki</h1>
     <div id="mapid"></div>
     <button onclick="toggleSettings()">Select Bounding Box</button>
     <button onclick="runPythonCode()">Run UMEP</button>
-    <button onclick="panToCenter()">Pan To Center</button>
     <div id="output"></div>
     <div id="settings">
+        <div id="textforcustomer">Choose upper and lower point </div>
         <label for="upperPoint">upper (lat, lon):</label>
         <input type="text" id="upperPoint" placeholder="esim. 60.1, 24.9">
         <button onclick="selectUpperPoint()">Choose by clicking the map</button><br>
@@ -35,21 +35,34 @@
         <button onclick="selectLowerPoint()">Choose by clicking the map</button><br>
         <button onclick="applyBoundingBox()">Accept</button>
         <button onclick="removeBoundingBox()">Remove bbox</button><br>
+    
+        <div id="output"></div>
+        <div id="map"></div>
 
     <!-- Leaflet JavaScript-file -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://unpkg.com/leaflet-geotiff/leaflet-geotiff.js"></script>
     <script>
+
+        // background color
+        document.body.style.backgroundColor = "#FFD700";
+
         // markers
         var upperMarker, lowerMarker;
 
         // bbox
         var rectangle
+        var boundingBoxDefined = false
 
         // a map
         // Helsinki [60.17, 24.94]
         // gothenburg [57.71, 11.96]
-        var mymap = L.map('mapid').setView([57.71, 11.96], 12);
+        var mymap = L.map('mapid').setView([60.17, 24.94], 12);
+
+        // project area bounding box
+        // 60.18686, 24.89476
+        // 60.14397, 24.96747
+        var project_area = L.rectangle(L.latLngBounds(L.latLng(60.18686, 24.89476), L.latLng(60.14397, 24.96747)), {color: '#0000FF', weight: 1, fillOpacity: 0.1}).addTo(mymap);
 
         var heartIcon = L.icon({
             iconUrl: 'https://emojicdn.elk.sh/❤️',
@@ -63,7 +76,7 @@
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(mymap);
 
-        // settings on/off
+        // bbox selection on/off
         function toggleSettings() {
             var settingsDiv = document.getElementById("settings");
             if (settingsDiv.style.display === "none") {
@@ -78,22 +91,44 @@
             var upperPoint = document.getElementById("upperPoint").value.split(",");
             var lowerPoint = document.getElementById("lowerPoint").value.split(",");
             if (upperPoint.length !== 2 || lowerPoint.length !== 2) {
-                alert("bad coordinates!");
+                alert("Please give coordinates!");
                 return;
             }
-            if (rectangle) {
+
+            // bounds of bbox
+            var newBounds = L.latLngBounds(
+            L.latLng(parseFloat(upperPoint[0]), parseFloat(upperPoint[1])),
+            L.latLng(parseFloat(lowerPoint[0]), parseFloat(lowerPoint[1]))
+            );
+
+            // making sure that bounding box are inside the study area!
+            if (project_area && project_area.getBounds().contains(newBounds))  {
+
+
+
+                if (rectangle) {
                 mymap.removeLayer(rectangle);
+                }
+                if (upperMarker) {
+                    mymap.removeLayer(upperMarker);
+                }
+                if (lowerMarker) {
+                    mymap.removeLayer(lowerMarker);
+                }
+                upperMarker = L.marker([parseFloat(upperPoint[0]), parseFloat(upperPoint[1])], {icon: heartIcon}).addTo(mymap);
+                lowerMarker = L.marker([parseFloat(lowerPoint[0]), parseFloat(lowerPoint[1])], {icon: heartIcon}).addTo(mymap);
+                var bounds = [upperMarker.getLatLng(), lowerMarker.getLatLng()];
+                rectangle = L.rectangle(bounds, {color: "#FF69B4", weight: 1}).addTo(mymap);
+                boundingBoxDefined = true;
+                // saving it to file
+                write_geojson(rectangle)
+                return;
+                }
+
+            else {
+                alert("Bounding box is outside of study area!");
             }
-            if (upperMarker) {
-                mymap.removeLayer(upperMarker);
-            }
-            if (lowerMarker) {
-                mymap.removeLayer(lowerMarker);
-            }
-            upperMarker = L.marker([parseFloat(upperPoint[0]), parseFloat(upperPoint[1])], {icon: heartIcon}).addTo(mymap);
-            lowerMarker = L.marker([parseFloat(lowerPoint[0]), parseFloat(lowerPoint[1])], {icon: heartIcon}).addTo(mymap);
-            var bounds = [upperMarker.getLatLng(), lowerMarker.getLatLng()];
-            rectangle = L.rectangle(bounds, {color: "#FF69B4", weight: 1}).addTo(mymap);
+
         }
 
         function removeBoundingBox() {
@@ -106,6 +141,8 @@
             if (lowerMarker) {
                 mymap.removeLayer(lowerMarker);
             }
+
+            boundingBoxDefined = false;
         }
 
         // selecting upper/lower points
@@ -128,25 +165,80 @@
             activeInput = null;
         });
         
+        // saving to geojson to the files
+        function write_geojson(rectangle){
+            //const fs = require('fs');
+            //const geojson = rectangle.toGeoJSON();
+
+            //fs.writeFile('bounding_box.geojson', JSON.stringify(geojson), (err) => {
+
+
+                const fs = require('fs');
+
+                // Tiedoston sisältö
+                const textContent = "Tähän tulee teksti tiedostoon";
+
+                // Tiedoston nimi ja polku
+                const fileName = 'tekstitiedosto.txt';
+                const filePath = `${__dirname}/${fileName}`;
+
+                // Tallennetaan tiedosto
+                fs.writeFileSync(filePath, textContent);
+            
+        }
         
         // running python
         function runPythonCode() {
-            
-            document.getElementById("output").innerText = "Running Python code..";
-            // call python umep code there somehow !!!
+            if (!boundingBoxDefined) {
+                document.getElementById("output").innerText = "Please define bounding box first!"
+            }
+            else{
+                document.getElementById("output").innerText = "Processing SOLWEIG...";
+                // call python umep code there somehow !!!
 
-            // add output tiff-file to map
-            var path = 'Output_SOLWEIG\buildings.tif'
-            L.leafletGeotiff(path).addTo(mymap);
+                // add output tiff-file to map
+                //var path = 'DEM aligned.tif'
+                //var rasterLayer = L.leafletGeotiff(path).addTo(mymap);
 
-            document.getElementById("output").innerText = "Processing ready!";
-        }
+                // pan to view to file
+                //mymap.fitBounds(rasterLayer.getBounds());
 
-        // pan to center
-        function panToCenter() {
-            mymap.setView([60.17, 24.94], 12);
-        }
+                //document.getElementById("output").innerText = "Processing ready!";
 
+                // Simulate calling the Python code
+                setTimeout(() => {
+                    // add output tiff-file to map
+                    var path = 'DEM aligned.tif';
+                    fetch(path)
+                        .then(response => response.arrayBuffer())
+                        .then(arrayBuffer => {
+                            var tiff = L.leafletGeotiff(arrayBuffer, {
+                                band: 0,
+                                renderer: new L.LeafletGeotiff.Plotty({
+                                    displayMin: 0,
+                                    displayMax: 255,
+                                    clampLow: true,
+                                    clampHigh: true,
+                                    colorScale: 'viridis'
+                                })
+                            }).addTo(mymap);
+
+                            // Pan to view to file
+                            mymap.fitBounds(tiff.getBounds());
+                        })
+                        .catch(error => {
+                            console.error("Error loading TIFF file:", error);
+                            document.getElementById("output").innerText = "Error loading TIFF file.";
+                        });
+
+                    document.getElementById("output").innerText = "Processing ready!";
+                }, 2000); // Simulate delay for processing
+
+            }
+                  
+
+    }
     </script>
 </body>
 </html>
+        
