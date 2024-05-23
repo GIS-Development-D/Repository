@@ -1,0 +1,12 @@
+{
+    "qgis_prefix_path": "D:/GIS-Development",
+    "plugin_paths": [
+        "D:/QGIS 3.36.1/apps/qgis/python/plugins",
+        "C:/Users/ASUS/AppData/Roaming/QGIS/QGIS3/profiles/default/python/plugins"
+    ],
+    "input_directory": "data/input/",
+    "output_directory": "data/output/",
+    "umep_tool_paths": {
+        "processing_umep": "path/to/processing_umep"
+    }
+}

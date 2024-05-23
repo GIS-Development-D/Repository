@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 from tqdm import tqdm
 from qgis.core import QgsApplication
 from qgis.core import QgsCoordinateTransform
@@ -15,9 +16,13 @@ from osgeo import ogr, osr
 from PyQt5.QtWidgets import QApplication
 from qgis.PyQt.QtCore import QVariant
 
+# Load configuration
+with open('config.json') as config_file:
+    config = json.load(config_file)
+
 # ----------------- Initialization of the QGIS related dependencies -----------------
 # Initiating a QGIS application
-QgsApplication.setPrefixPath("D:/GIS-Development", True)
+QgsApplication.setPrefixPath(config["qgis_prefix_path"], True)
 qgs = QgsApplication([], False)
 qgs.initQgis()
 
@@ -25,14 +30,14 @@ qgs.initQgis()
 app = QApplication([])
 
 # This line import the default plugins of the QGIS
-sys.path.append(r'C:\Program Files\QGIS 3.36.0\apps\qgis\python\plugins')
+# Remember to change it as your own local path of the QGIS plugins(This is for UMEP tools)
+for path in config["plugin_paths"]:
+    sys.path.append(path)
 import processing
 from processing.core.Processing import Processing
 
 # It is important to initialize a Processing before using it
 Processing.initialize()
-# Remember to change it as your own local path of the QGIS plugins(This is for UMEP tools)
-sys.path.append(r'C:\Users\ilkka\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins')
 from processing_umep.processing_umep_provider import ProcessingUMEPProvider
 from qgis.core import QgsCoordinateReferenceSystem
 
@@ -76,7 +81,7 @@ def run_SOLWEIG(input_dsm, input_cdsm, input_dem, input_meteo, svf_path, aniso_p
                 trans_veg=3, t_height=25, albedo_walls=0.2, albedo_ground=0.15, emis_walls=0.9, emis_ground=0.95,
                 abs_s=0.7, abs_l=0.95, posture=0, cyl=True, only_global=False, utc=0, poi_file=None,
                 poi_field='', age=35, activity=80, clo=0.9, weight=75, height=180, sex=0, sensor_height=10,
-                output_treePlanter=True):
+                output_treePlanter=False):
     """
     Run the SOLWEIG model for outdoor thermal comfort.
 

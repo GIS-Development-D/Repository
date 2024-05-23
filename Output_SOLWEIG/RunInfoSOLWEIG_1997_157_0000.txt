@@ -1,4 +1,4 @@
-This file provides run settings for the SOLWEIG run initiated at: Fri, 10 May 2024 14:44:07
+This file provides run settings for the SOLWEIG run initiated at: Thu, 23 May 2024 22:06:48
 Version: SOLWEIG v2022a
 
 SURFACE DATA
