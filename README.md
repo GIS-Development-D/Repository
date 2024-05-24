@@ -178,4 +178,18 @@ This package provides tools for urban microclimate modeling using the Urban Mult
     - Transforms coordinate system for URock output raster.
   
 
-## Web Service
+
+
+## Web Service related code
+
+The service runs in csc rahti2 httpd environment.
+
+Web service UI is based on index.html file where all the front-end functionalies happen. The file contains many functions and variables and here is small recap the most important ones:
+
+variable mymap: The actual map element from leaflet library what uses openstreetmap on a base map. Based on the map the most of the commands relates on.
+
+variable rectangle: Bounding box that defines the area of the calculations. Also there is variable boundingBoxDefined which keeps track on is there bounding box in the screen.
+
+function applyBoundingBox: making the bounding box from user giving upper and lower point. Functions takes care of the bounding box is defined and it is inside of the study area. Also it removes all old markers and bounding boxes before it makes a new one.
+
+function runPythonCode: SHOULD call the umep code giving the user giving bounding box but it is not working. Now it is not working.
