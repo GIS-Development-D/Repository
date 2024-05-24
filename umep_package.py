@@ -392,7 +392,7 @@ def URock(input_buildings, input_building_height, input_vegetation, input_vegeta
                                                     'SAVE_VECTOR': True, 'SAVE_NETCDF': False, 'LOAD_OUTPUT': False})
 
 
-def transform_coordinate_vector_layer(input_file, output_file, target_crs=3006):
+def transform_coordinate_vector_layer(input_file, output_file):
     target_proj = osr.SpatialReference()
     target_proj.ImportFromEPSG(target_crs)
 
@@ -423,7 +423,7 @@ def transform_coordinate_vector_layer(input_file, output_file, target_crs=3006):
     del out_ds
 
 
-def transform_coordinate_raster_layer(input_file, output_file, target_crs='EPSG:3006'):
+def transform_coordinate_raster_layer(input_file, output_file, target_crs):
 
     raster_layer = QgsRasterLayer(input_file, 'Original Raster')
     if not raster_layer.isValid():
@@ -459,14 +459,14 @@ def transform_coordinate_raster_layer(input_file, output_file, target_crs='EPSG:
 
 
 # ----------------- Update the cdsm with New Trees Example -----------------
-def regenerate_cdsm():
-    input_directory = "Data/TreePlanterTestData"
+def regenerate_cdsm(input_directory="Data/TreePlanterTestData",
+                    output_TreePlanter_position='Output_TreePlanter_Position',
+                    input_TreePlanter_layer=os.path.join(output_TreePlanter_position, 'treePlanterPoint.shp')):
+
     input_cdsm = os.path.join(input_directory, 'CDSM.tif')
     input_dsm = os.path.join(input_directory, 'DSM.tif')
     input_dem = os.path.join(input_directory, 'DEM.tif')
 
-    output_TreePlanter_position = 'Output_TreePlanter_Position'
-    input_TreePlanter_layer = os.path.join(output_TreePlanter_position, 'treePlanterPoint.shp')
     output_cdsm = "Output_TreeGenerator/cdsm.tif"
     output_tdsm = "Output_TreeGenerator/tdsm.tif"
 
@@ -485,36 +485,36 @@ def SOLWEIG_Analysis(solweig_dir="Output_TreePlanter_SOLWEIG", stat_out="SOLWEIG
                            'STAT_OUT': stat_out, 'TMRT_STAT_OUT': tmrt_stat_out})
 
 
-# SOLWEIG_Example_Goteborg()
+SOLWEIG_Example_Goteborg()
 SOLWEIG_Example_Helsinki()
 
 # ----------------- The workflow of the green infrastructure solution -----------------
-# treePlanter_Example()
-# SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Initial.tif",
-#                  tmrt_stat_out="SOLWEIG_Analysis_Initial_tmrt.tif")
-# regenerate_cdsm()
-# treePlanter_Example(input_cdsm="Output_TreeGenerator/cdsm.tif", tree_planter_flag=False)
-# SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Improved.tif",
-#                  tmrt_stat_out="SOLWEIG_Analysis_Improved_tmrt.tif")
+treePlanter_Example()
+SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Initial.tif",
+                 tmrt_stat_out="SOLWEIG_Analysis_Initial_tmrt.tif")
+regenerate_cdsm()
+treePlanter_Example(input_cdsm="Output_TreeGenerator/cdsm.tif", tree_planter_flag=False)
+SOLWEIG_Analysis(stat_out="SOLWEIG_Analysis_Improved.tif",
+                 tmrt_stat_out="SOLWEIG_Analysis_Improved_tmrt.tif")
 
 # ----------------- The workflow of the URock(wind speed) analysis -----------------
-# prepared_building, prepared_vegetation = URock_prepare(input_dsm='URock/Annedal_EPSG3006/dsm.tif',
-#                                                        input_dem='URock/Annedal_EPSG3006/dem.tif',
-#                                                        input_cdsm='URock/Annedal_EPSG3006/cdsm.tif',
-#                                                        input_building='URock/Annedal_EPSG3006/buildings.shp',
-#                                                        output_building='URock/Output/building_urock.gpkg',
-#                                                        output_vegetation='URock/Output/veg_urock.gpkg')
-# transform_coordinate_vector_layer(input_file=prepared_building, output_file="URock/Output/building_urock_3006.gpkg")
-# transform_coordinate_vector_layer(input_file=prepared_vegetation, output_file="URock/Output/veg_urock_3006.gpkg")
-#
-# URock(input_buildings="URock/Output/building_urock_3006.gpkg",
-#       input_building_height='ROOF_HEIGHT',
-#       input_vegetation="URock/Output/veg_urock_3006.gpkg",
-#       input_vegetation_height='VEG_HEIGHT',
-#       output_urock='URock/Output',
-#       output_filename='urock_output',
-#       wind_height=1.5)
-#
-# transform_coordinate_raster_layer(input_file="URock/Output/z1_5/urock_outputWS.Gtiff",
-#                                   output_file="URock/Output/z1_5/urock_outputWS_3006.Gtiff",
-#                                   target_crs='EPSG:3006')
+prepared_building, prepared_vegetation = URock_prepare(input_dsm='URock/Annedal_EPSG3006/dsm.tif',
+                                                       input_dem='URock/Annedal_EPSG3006/dem.tif',
+                                                       input_cdsm='URock/Annedal_EPSG3006/cdsm.tif',
+                                                       input_building='URock/Annedal_EPSG3006/buildings.shp',
+                                                       output_building='URock/Output/building_urock.gpkg',
+                                                       output_vegetation='URock/Output/veg_urock.gpkg')
+transform_coordinate_vector_layer(input_file=prepared_building, output_file="URock/Output/building_urock_3006.gpkg")
+transform_coordinate_vector_layer(input_file=prepared_vegetation, output_file="URock/Output/veg_urock_3006.gpkg")
+
+URock(input_buildings="URock/Output/building_urock_3006.gpkg",
+      input_building_height='ROOF_HEIGHT',
+      input_vegetation="URock/Output/veg_urock_3006.gpkg",
+      input_vegetation_height='VEG_HEIGHT',
+      output_urock='URock/Output',
+      output_filename='urock_output',
+      wind_height=1.5)
+
+transform_coordinate_raster_layer(input_file="URock/Output/z1_5/urock_outputWS.Gtiff",
+                                  output_file="URock/Output/z1_5/urock_outputWS_3006.Gtiff",
+                                  target_crs='EPSG:3006')
